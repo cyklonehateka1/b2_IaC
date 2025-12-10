@@ -25,12 +25,12 @@ jobs:
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init
-        run: terraform init -input=false -reconfigure \
-          -backend-config="bucket=my-hateka-tf-state-bucket-123456" \
-          -backend-config="key=envs/prod/terraform.tfstate" \
-          -backend-config="region=us-east-1" \
-          -backend-config="dynamodb_table=terraform-locks"
-
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="bucket=my-hateka-tf-state-bucket-123456" \
+            -backend-config="key=envs/prod/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="dynamodb_table=terraform-locks"
       - name: Terraform Plan
         run: terraform plan
 
