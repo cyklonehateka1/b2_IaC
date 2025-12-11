@@ -14,3 +14,8 @@ variable "key_name" {
   description = "Name of the existing AWS key pair for SSH"
   type        = string
 }
+
+variable "web_server_ami" {
+  description = "AMI ID for web server"
+  type        = string
+}

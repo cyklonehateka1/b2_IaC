@@ -25,14 +25,23 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
-# EC2 instance
 resource "aws_instance" "web" {
-  ami           = "ami-0ecb62995f68bb549" # Ubuntu in us-east-1
-  instance_type = var.instance_type
-  key_name      = var.key_name
-  security_groups = [aws_security_group.web_sg.name]
+  ami                    = var.web_server_ami
+  instance_type          = var.instance_type
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
 
   tags = {
     Name = "web-instance"
   }
+
+  # Automatically start Nginx on boot
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
+              EOF
 }
+
+
+
