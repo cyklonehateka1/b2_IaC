@@ -43,28 +43,42 @@ jobs:
       - name: Get EC2 public IP
         id: get_ip
         run: |
-          # 1. Get the IP address and ensure it is stripped of any surrounding whitespace/newlines
-          IP_ADDRESS=$(terraform output -raw instance_public_ip | sed 's/^[ \t]*//;s/[ \t]*$//' | tr -d '\r\n')
+          # 1. Use the clean command to get the raw IP
+          RAW_IP=$(terraform output -raw instance_public_ip)
+
+          # 2. Use a different, clean method to strip all whitespace/non-printable characters
+          #    We use 'awk' for a very strict, multi-platform robust trim.
+          CLEAN_IP=$(echo "$RAW_IP" | tr -d '\r\n' | awk '{$1=$1};1')
           
-          echo "Debug: Captured IP is -> $IP_ADDRESS <-" # Add a debug line to confirm
+          # 3. Print the debug line to verify the clean output
+          echo "Debug: Captured IP is -> $CLEAN_IP <-"
           
-          # 2. Set the GitHub Actions step output using the cleaned variable
-          echo "instance_ip=$IP_ADDRESS" >> $GITHUB_OUTPUT
+          # 4. Set the GitHub Actions step output using the guaranteed clean variable
+          echo "instance_ip=$CLEAN_IP" >> $GITHUB_OUTPUT
 
   configure_ec2:
     name: Configure EC2
     runs-on: ubuntu-latest
     needs: terraform
-    # Remove the `env:` block for EC2_IP entirely.
-    # The variable passing should happen directly in the `with:` block.
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      # 1. New Step: Force the IP into a clean environment variable
+      # This step explicitly writes the job output into the environment file, 
+      # ensuring it's loaded as a pure string for subsequent steps.
+      - name: Set SSH Host Environment Variable
+        run: |
+          CLEAN_HOST="${{ needs.terraform.outputs.instance_ip }}"
+          echo "EC2_HOST=$CLEAN_HOST" >> $GITHUB_ENV
+          echo "Debug: Host variable set to: $CLEAN_HOST"
+
+      # 2. Configure EC2 via SSH: Now reference the guaranteed clean environment variable
       - name: Configure EC2 via SSH
         uses: appleboy/ssh-action@v0.1.9
         with:
-          # Use the direct output reference
-          host: ${{ needs.terraform.outputs.instance_ip }} 
+          # Reference the environment variable created in the previous step
+          host: ${{ env.EC2_HOST }} 
           username: ubuntu
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: 22
