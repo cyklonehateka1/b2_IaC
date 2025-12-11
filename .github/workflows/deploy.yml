@@ -9,14 +9,11 @@ jobs:
   packer:
     name: Build AMI
     runs-on: ubuntu-latest
+    container:
+      image: hashicorp/packer:1.9.5  # Packer already installed
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Set up Packer
-        uses: hashicorp/setup-packer@v1
-        with:
-          version: "1.9.5"
 
       - name: Build AMI
         id: packer_build
